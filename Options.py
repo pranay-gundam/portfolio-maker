@@ -9,12 +9,15 @@
 # In discrete time we have equations for the pricing of options that are
 # recursive, and as such we have to calculate the possible stock prices at each
 #  time.
-def domainCalc_1(u, d, r, S_0, N):
-    p = ((1+r)-d)/(u-d)
-    q = (u - (1+r))/(u-d)
+def domainCalc_1(bank, asset, N):
+    d = asset.getDownFactor()
+    u = asset.getUpFactor()
+    r = bank.getInterest()
+    p = [((1+i) - d)/(u-d) for i in r]
+    q = [(u - (1+i))/(u-d) for i in r]
 
     domain = [0] * (N+1)
-    domain[0] = set( [S_0] )
+    domain[0] = set( [asset.getInitPrice()] )
     for n in range(N):
         domain[n+1] = set()
         for s in domain[n]:
@@ -27,12 +30,15 @@ def domainCalc_1(u, d, r, S_0, N):
 # Since, however, we are using a state process that keeps track of two things,
 # there are different domains for the up and down options. This one keeps a 
 # running track of the min stock price.
-def downDomain_2(u, d, r, S_0, N):
-    p = ((1+r)-d)/(u-d)
-    q = (u - (1+r))/(u-d)
+def downDomain_2(bank, asset, N):
+    d = asset.getDownFactor()
+    u = asset.getUpFactor()
+    r = bank.getInterest()
+    p = [((1+i) - d)/(u-d) for i in r]
+    q = [(u - (1+i))/(u-d) for i in r]
 
     domain = [0] * (N+1)
-    domain[0] = set( [(S_0, S_0)] )
+    domain[0] = set( [(asset.getInitPrice(), asset.getInitPrice())] )
     for n in range(N):
         domain[n+1] = set()
         for s in domain[n]:
@@ -44,12 +50,16 @@ def downDomain_2(u, d, r, S_0, N):
 # Since, however, we are using a state process that keeps track of two things,
 # there are different domains for the up and down options. This one keeps a 
 # running track of the max stock price.
-def upDomain_2(u, d, r, S_0, N):
-    p = ((1+r)-d)/(u-d)
-    q = (u - (1+r))/(u-d)
+def upDomain_2(bank, asset, N):
+    d = asset.getDownFactor()
+    u = asset.getUpFactor()
+    r = bank.getInterest()
+    p = [((1+i) - d)/(u-d) for i in r]
+    q = [(u - (1+i))/(u-d) for i in r]
+
 
     domain = [0] * (N+1)
-    domain[0] = set( [(S_0, S_0)] )
+    domain[0] = set( [(asset.getInitPrice(), asset.getInitPrice())] )
     for n in range(N):
         domain[n+1] = set()
         for s in domain[n]:
@@ -58,20 +68,67 @@ def upDomain_2(u, d, r, S_0, N):
     return p, q, domain
 
 
+class Bank(object):
+    def __init__(self, r):
+        self.interest = r
+        self.finTime = len(r)
+    
+    def getFinTime(self):
+        return self.finTime
+
+    def getInterest(self):
+        return self.interest
+
+    def getInterestn(self, n):
+        if (n >= self.getFinTime):
+            print("our interest array is not long enough\n")
+            return
+        else:
+            return self.interest[n]
+
+class Stock(object):
+    def __init__(self, u, d, S_0):
+        self.price0 = S_0
+        self.up = u
+        self.down = d
+    
+    def getUpFactor(self):
+        return self.up
+    
+    def getDownFactor(self):
+        return self.down
+
+    def getUpFactorn(self, n):
+        return self.up[n]
+    
+    def getDownFactorn(self, n):
+        return self.down[n]
+
+    def getInitPrice(self):
+        return self.price0
+    
+    def getPrice(self, event):
+        final = self.getInitPrice()
+        for i in range(len(event)):
+            final = (final*self.getUpFactorn(i) if event[i] == "u" 
+                     else final*self.getDownFactorn(i))
+        return final
+
 # This super class is just here in case we may need it in our implementation
 # later on at some point
 class Option(object):
-    def __init__(self):
-        pass
+    pass
 
 # A european put is an option that give the owner the right to exercise at a 
 # certain point (that we denote as the exercise time). The value of a european 
 # put at its excersize time is typically (K-S_N)^+ where S_N is the value of 
 # underlying at the exercise time and K is some predetermined "strike price".
 class EuroPut(Option):
-    def __init__(self, K, N):
+    def __init__(self, K, N, underlying, bank):
         self.strike = K
         self.maturity = N
+        self.underlying = underlying
+        self.bank = bank
     
     def getStrike(self):
         return self.strike
@@ -85,11 +142,19 @@ class EuroPut(Option):
     def isDoubleState(self):
         return False
 
-    def domainCalc(u, d, r, S_0, N):
-        return domainCalc_1(u, d, r, S_0, N)
+    def getUnderlying(self):
+        return self.underlying
+    
+    def getBank(self):
+        return self.bank
 
-    def rollback1(u, d, r, p, q, n, s, rng):
-        return (p*rng[n+1][u*s] + q*rng[n+1][d*s])/(1+r)
+    def domainCalc(self, N):
+        return domainCalc_1(self.getBank(), self.getUnderlying, N)
+
+    def rollback1(self, p, q, n, s, rng):
+        return (p*rng[n+1][self.getUnderlying().getUpFactorn(n)*s] + 
+                q*rng[n+1][self.getUnderlying().getDownFactorn(n)*s])/(1+
+                self.getBank().getInterest(n))
 
     def rollback2d(self, u, d, r, p, q, n, s, rng, m):
         return (p*rng[n+1][(u*s,m)] + q*rng[n+1][(d*s,min(d*s,m))])/(1+r)
@@ -105,9 +170,11 @@ class EuroPut(Option):
 # call at its excersize time is typically (S_N-K)^+ where S_N is the value of 
 # underlying at the exercise time and K is some predetermined "strike price".
 class EuroCall(Option):
-    def __init__(self, K, N):
+    def __init__(self, K, N, underlying, bank):
         self.strike = K
         self.maturity = N
+        self.underlying = underlying
+        self.bank = bank
     
     def getStrike(self):
         return self.strike
@@ -121,8 +188,8 @@ class EuroCall(Option):
     def isDoubleState(self):
         return False
 
-    def domainCalc(u, d, r, S_0, N):
-        return domainCalc_1(u, d, r, S_0, N)
+    def domainCalc(self, N):
+        return domainCalc_1(self.getBank(), self.getUnderlying, N)
 
     def rollback1(u, d, r, p, q, n, s, rng):
         return (p*rng[n+1][u*s] + q*rng[n+1][d*s])/(1+r)

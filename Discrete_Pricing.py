@@ -10,7 +10,7 @@ import Options
 # Future changes can be made to optimize time based on only the moment in time
 # that is required. 
 def pricingCalcSingle(option, u, d, r, N, S_0, K):
-    p, q, domain = option.domainCalc(u, d, r, S_0, N)
+    p, q, domain = option.domainCalc(N)
     rng = [0] * (N+1)
 
     if option.isSingleState():

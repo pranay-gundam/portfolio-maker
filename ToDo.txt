@@ -1,0 +1,4 @@
+1. Fix all the interest rate and up and down factors and p,q such that it is 
+   generalized over time (i.e. you can have different interest rates and up and
+   down factors over time)
+2. 

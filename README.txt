@@ -1,8 +1,8 @@
-This folder currently contains code to price options in discrete time. I price
-using a N-period binomial model with a market that has a bank with interest rate
- r and a stock with initial stock price S_0. Included is code to calculate the 
-number of stocks held in the replicating portfolio at any given time and also 
-the value of a portfolio holding securities (S^0, S^1, ..., S^n) with quanities
+This project currently prices options in discrete time. It uses a N-period 
+binomial model with a market that has a bank with interest rate r and a stock 
+with initial stock price S_0. Included is code to calculate the number of stocks
+held in the replicating portfolio at any given time and also the value of a 
+portfolio holding securities (S^0, S^1, ..., S^n) with quanities
 (c^1, c^2, ..., c^n).
 
 Types of securities supported:
