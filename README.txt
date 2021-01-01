@@ -6,6 +6,8 @@ portfolio holding securities (S^0, S^1, ..., S^n) with quanities
 (c^1, c^2, ..., c^n).
 
 Types of securities supported:
+ - Bank
+ - Stock
  - European Call
  - European Put
  - European Straddle
