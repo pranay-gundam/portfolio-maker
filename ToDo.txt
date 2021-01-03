@@ -1,11 +1,10 @@
-1. Fix all the interest rate and up and down factors and p,q such that it is 
-   generalized over time (i.e. you can have different interest rates and up and
-   down factors over time) - start with fixing domain calculation and then move
-   onto fixing all the functions for each object/option
-2. Test all the options and functions made to far using test code from 21-370
-3. Create functionality to create portfolios
-4. Make a .exe file and a user interface
-5. Price other options that are included in the README file
-6. Create functionality to be able to create a replicating portfolio, verify if
+0. Fix errors with the domain calculation (think about a call on an up and out
+   barrier option, how does domain calculation and pricing work when options
+   are stacked like that?)
+1. Test all the options and functions made to far using test code from 21-370
+2. Create functionality to create portfolios
+3. Make a .exe file and a user interface
+4. Price other options that are included in the README file
+5. Create functionality to be able to create a replicating portfolio, verify if
    a market is arbitrage free, or verify if a market is complete.
-7. Get real time data from online
+6. Get real time data from online and incorporate that into the porfolio maker
