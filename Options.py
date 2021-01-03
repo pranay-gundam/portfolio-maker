@@ -6,6 +6,75 @@
 # Author: Pranay Gundam
 ###############################################################################
 
+# Create a bank with an interest rate that is represented as an array so that
+# we can have a different interest at each time n.
+class Bank(object):
+    def __init__(self, r):
+        self.interest = r
+        self.finTime = len(r)
+    
+    def getFinTime(self):
+        return self.finTime
+
+    def getInterest(self):
+        return self.interest
+
+    def isSame(self, other):
+        if not isinstance(self, other): return False
+        if (self.getFinTime() == other.getFinTime() and 
+            self.getInterest() == other.getInterest()):
+            return True
+        return False
+
+    def getInterestn(self, n):
+        if (n >= self.getFinTime()):
+            print("our interest array is not long enough\n")
+            return
+        else:
+            return self.interest[n]
+
+# Basic stock with an initial price and up and down factors that can change
+# based on n.
+class Stock(object):
+    def __init__(self, u, d, S_0):
+        self.price0 = S_0
+        self.up = u
+        self.down = d
+    
+    def getUpFactor(self):
+        return self.up
+    
+    def getDownFactor(self):
+        return self.down
+
+    def getUpFactorn(self, n):
+        return self.up[n]
+    
+    def getDownFactorn(self, n):
+        return self.down[n]
+
+    def getInitPrice(self):
+        return self.price0
+    
+    def isSame(self, other):
+        if not isinstance(self, other): return False
+        init1 = self.getInitPrice()
+        init2 = other.getInitPrice()
+        u1 = self.getUpFactor()
+        d1 = self.getDownFactor()
+        u2 = other.getUpFactor()
+        d2 = other.getDownFactor()
+        if init1 == init2 and u1 == u2 and d1 == d2:
+            return True
+        return False
+
+    def getPrice(self, event):
+        final = self.getInitPrice()
+        for i in range(len(event)):
+            final = (final*self.getUpFactorn(i) if event[i] == "u" 
+                     else final*self.getDownFactorn(i))
+        return final
+
 # In discrete time we have equations for the pricing of options that are
 # recursive, and as such we have to calculate the possible stock prices at each
 #  time.
@@ -68,52 +137,6 @@ def upDomain_2(bank, asset, N):
     return p, q, domain
 
 
-class Bank(object):
-    def __init__(self, r):
-        self.interest = r
-        self.finTime = len(r)
-    
-    def getFinTime(self):
-        return self.finTime
-
-    def getInterest(self):
-        return self.interest
-
-    def getInterestn(self, n):
-        if (n >= self.getFinTime):
-            print("our interest array is not long enough\n")
-            return
-        else:
-            return self.interest[n]
-
-class Stock(object):
-    def __init__(self, u, d, S_0):
-        self.price0 = S_0
-        self.up = u
-        self.down = d
-    
-    def getUpFactor(self):
-        return self.up
-    
-    def getDownFactor(self):
-        return self.down
-
-    def getUpFactorn(self, n):
-        return self.up[n]
-    
-    def getDownFactorn(self, n):
-        return self.down[n]
-
-    def getInitPrice(self):
-        return self.price0
-    
-    def getPrice(self, event):
-        final = self.getInitPrice()
-        for i in range(len(event)):
-            final = (final*self.getUpFactorn(i) if event[i] == "u" 
-                     else final*self.getDownFactorn(i))
-        return final
-
 # This super class is just here in case we may need it in our implementation
 # later on at some point
 class Option(object):
@@ -148,24 +171,34 @@ class EuroPut(Option):
     def getBank(self):
         return self.bank
 
+    def isSame(self, other):
+        if not isinstance(self, other): return False
+        bank1 = self.getBank()
+        bank2 = other.getBank()
+        if self.getStrike() != other.getStrike(): return False
+        if self.getMaturity() != other.getMaturity(): return False
+        if not bank1.isSame(bank2): return False
+        if not self.getUnderlying().isSame(other.getUnderlying()): return False
+        return True
+
     def domainCalc(self, N):
-        return domainCalc_1(self.getBank(), self.getUnderlying, N)
+        return domainCalc_1(self.getBank(), self.getUnderlying(), N)
 
     def rollback1(self, p, q, n, s, rng):
         return (p[n]*rng[n+1][self.getUnderlying().getUpFactorn(n)*s] + 
                 q[n]*rng[n+1][self.getUnderlying().getDownFactorn(n)*s])/(1+
-                self.getBank().getInterest(n))
+                self.getBank().getInterestn(n))
 
     def rollback2d(self, p, q, n, s, rng, m):
         u = self.getUnderlying().getUpFactorn(n)
         d = self.getUnderlying().getDownFactor(n)
-        r = self.getBank().getInterest(n)
+        r = self.getBank().getInterestn(n)
         return (p[n]*rng[n+1][(u*s,m)] + q[n]*rng[n+1][(d*s,min(d*s,m))])/(1+r)
 
     def rollback2u(self, p, q, n, s, rng, m):
         u = self.getUnderlying().getUpFactorn(n)
         d = self.getUnderlying().getDownFactor(n)
-        r = self.getBank().getInterest(n)
+        r = self.getBank().getInterestn(n)
         return (p[n]*rng[n+1][(u*s,max(u*s,m))] + q[n]*rng[n+1][(d*s,m)])/(1+r)
 
     def finalEval(self, s):
@@ -182,7 +215,7 @@ class EuroCall(Option):
         self.underlying = underlying
         self.bank = bank
     
-    def getUnderying(self):
+    def getUnderlying(self):
         return self.underlying
     
     def getBank(self):
@@ -200,25 +233,35 @@ class EuroCall(Option):
     def isDoubleState(self):
         return False
 
+    def isSame(self, other):
+        if not isinstance(self, other): return False
+        bank1 = self.getBank()
+        bank2 = other.getBank()
+        if self.getStrike() != other.getStrike(): return False
+        if self.getMaturity() != other.getMaturity(): return False
+        if not bank1.isSame(bank2): return False
+        if not self.getUnderlying().isSame(other.getUnderlying()): return False
+        return True
+
     def domainCalc(self, N):
-        return domainCalc_1(self.getBank(), self.getUnderlying, N)
+        return domainCalc_1(self.getBank(), self.getUnderlying(), N)
 
     def rollback1(self, p, q, n, s, rng):
         u = self.getUnderlying().getUpFactorn(n)
-        d = self.getUnderlying().getDownFactor(n)
-        r = self.getBank().getInterest(n)
+        d = self.getUnderlying().getDownFactorn(n)
+        r = self.getBank().getInterestn(n)
         return (p[n]*rng[n+1][u*s] + q[n]*rng[n+1][d*s])/(1+r)
     
     def rollback2d(self, p, q, n, s, rng, m):
         u = self.getUnderlying().getUpFactorn(n)
-        d = self.getUnderlying().getDownFactor(n)
-        r = self.getBank().getInterest(n)
+        d = self.getUnderlying().getDownFactorn(n)
+        r = self.getBank().getInterestn(n)
         return (p[n]*rng[n+1][(u*s,m)] + q[n]*rng[n+1][(d*s,min(d*s,m))])/(1+r)
 
     def rollback2u(self, u, d, r, p, q, n, s, rng, m):
         u = self.getUnderlying().getUpFactorn(n)
-        d = self.getUnderlying().getDownFactor(n)
-        r = self.getBank().getInterest(n)
+        d = self.getUnderlying().getDownFactorn(n)
+        r = self.getBank().getInterestn(n)
         return (p[n]*rng[n+1][(u*s,max(u*s,m))] + q[n]*rng[n+1][(d*s,m)])/(1+r)
 
     def finalEval(self, s):
@@ -235,7 +278,7 @@ class EuroStraddle(Option):
         self.underlying = underlying
         self.bank = bank
     
-    def getUnderying(self):
+    def getUnderlying(self):
         return self.underlying
     
     def getBank(self):
@@ -253,25 +296,35 @@ class EuroStraddle(Option):
     def isDoubleState(self):
         return False
 
+    def isSame(self, other):
+        if not isinstance(self, other): return False
+        bank1 = self.getBank()
+        bank2 = other.getBank()
+        if self.getStrike() != other.getStrike(): return False
+        if self.getMaturity() != other.getMaturity(): return False
+        if not bank1.isSame(bank2): return False
+        if not self.getUnderlying().isSame(other.getUnderlying()): return False
+        return True
+
     def domainCalc(self, N):
-        return domainCalc_1(self.getBank(), self.getUnderlying, N)
+        return domainCalc_1(self.getBank(), self.getUnderlying(), N)
 
     def rollback1(self, p, q, n, s, rng):
         u = self.getUnderlying().getUpFactorn(n)
-        d = self.getUnderlying().getDownFactor(n)
-        r = self.getBank().getInterest(n)
+        d = self.getUnderlying().getDownFactorn(n)
+        r = self.getBank().getInterestn(n)
         return (p[n]*rng[n+1][u*s] + q[n]*rng[n+1][d*s])/(1+r)
     
     def rollback2d(self, p, q, n, s, rng, m):
         u = self.getUnderlying().getUpFactorn(n)
-        d = self.getUnderlying().getDownFactor(n)
-        r = self.getBank().getInterest(n)
+        d = self.getUnderlying().getDownFactorn(n)
+        r = self.getBank().getInterestn(n)
         return (p[n]*rng[n+1][(u*s,m)] + q[n]*rng[n+1][(d*s,min(d*s,m))])/(1+r)
 
     def rollback2u(self, u, d, r, p, q, n, s, rng, m):
         u = self.getUnderlying().getUpFactorn(n)
-        d = self.getUnderlying().getDownFactor(n)
-        r = self.getBank().getInterest(n)
+        d = self.getUnderlying().getDownFactorn(n)
+        r = self.getBank().getInterestn(n)
         return (p[n]*rng[n+1][(u*s,max(u*s,m))] + q[n]*rng[n+1][(d*s,m)])/(1+r)
         
     def finalEval(self, s):
@@ -303,13 +356,23 @@ class AmerPut(Option):
     def isDoubleState(self):
         return False
 
+    def isSame(self, other):
+        if not isinstance(self, other): return False
+        bank1 = self.getBank()
+        bank2 = other.getBank()
+        if self.getStrike() != other.getStrike(): return False
+        if self.getMaturity() != other.getMaturity(): return False
+        if not bank1.isSame(bank2): return False
+        if not self.getUnderlying().isSame(other.getUnderlying()): return False
+        return True
+
     def domainCalc(self, N):
         return domainCalc_1(self.getBank(), self.getUnderlying(), N)
 
     def rollback1(self, p, q, n, s, rng):
         u = self.getUnderlying().getUpFactorn(n)
-        d = self.getUnderlying().getDownFactor(n)
-        r = self.getBank().getInterest(n)
+        d = self.getUnderlying().getDownFactorn(n)
+        r = self.getBank().getInterestn(n)
 
         rnmValue = (p[n]*rng[n+1][u*s] + q[n]*rng[n+1][d*s])/(1+r)
         currval = max(self.getStrike()-s, 0)
@@ -317,8 +380,8 @@ class AmerPut(Option):
 
     def rollback2d(self, p, q, n, s, rng, m):
         u = self.getUnderlying().getUpFactorn(n)
-        d = self.getUnderlying().getDownFactor(n)
-        r = self.getBank().getInterest(n)
+        d = self.getUnderlying().getDownFactorn(n)
+        r = self.getBank().getInterestn(n)
 
         rnmValue = (p[n]*rng[n+1][(u*s,m)] + q[n]*rng[n+1][(d*s,min(d*s,m))])/(1+r)
         currval = max(self.getStrike() - s, 0)
@@ -326,8 +389,8 @@ class AmerPut(Option):
     
     def rollback2u(self, u, d, r, p, q, n, s, rng, m):
         u = self.getUnderlying().getUpFactorn(n)
-        d = self.getUnderlying().getDownFactor(n)
-        r = self.getBank().getInterest(n)
+        d = self.getUnderlying().getDownFactorn(n)
+        r = self.getBank().getInterestn(n)
 
         rnmValue = (p[n]*rng[n+1][(u*s,max(u*s,m))] + q[n]*rng[n+1][(d*s,m)])/(1+r)
         currval = max(self.getStrike() - s, 0)
@@ -365,13 +428,23 @@ class AmerCall(Option):
     def isDoubleState(self):
         return False
 
+    def isSame(self, other):
+        if not isinstance(self, other): return False
+        bank1 = self.getBank()
+        bank2 = other.getBank()
+        if self.getStrike() != other.getStrike(): return False
+        if self.getMaturity() != other.getMaturity(): return False
+        if not bank1.isSame(bank2): return False
+        if not self.getUnderlying().isSame(other.getUnderlying()): return False
+        return True
+
     def domainCalc(self, N):
         return domainCalc_1(self.getBank(), self.getUnderlying(), N)
 
     def rollback1(self, p, q, n, s, rng):
         u = self.getUnderlying().getUpFactorn(n)
-        d = self.getUnderlying().getDownFactor(n)
-        r = self.getBank().getInterest(n)
+        d = self.getUnderlying().getDownFactorn(n)
+        r = self.getBank().getInterestn(n)
 
         rnmValue = (p[n]*rng[n+1][u*s] + q[n]*rng[n+1][d*s])/(1+r)
         currval = max(s-self.getStrike(), 0)
@@ -379,8 +452,8 @@ class AmerCall(Option):
 
     def rollback2d(self, p, q, n, s, rng, m):
         u = self.getUnderlying().getUpFactorn(n)
-        d = self.getUnderlying().getDownFactor(n)
-        r = self.getBank().getInterest(n)
+        d = self.getUnderlying().getDownFactorn(n)
+        r = self.getBank().getInterestn(n)
 
         rnmValue = (p[n]*rng[n+1][(u*s,m)] + q[n]*rng[n+1][(d*s,min(d*s,m))])/(1+r)
         currval = max(s-self.getStrike(), 0)
@@ -388,8 +461,8 @@ class AmerCall(Option):
 
     def rollback2u(self, p, q, n, s, rng, m):
         u = self.getUnderlying().getUpFactorn(n)
-        d = self.getUnderlying().getDownFactor(n)
-        r = self.getBank().getInterest(n)
+        d = self.getUnderlying().getDownFactorn(n)
+        r = self.getBank().getInterestn(n)
 
         rnmValue = (p[n]*rng[n+1][(u*s,max(u*s,m))] + q[n]*rng[n+1][(d*s,m)])/(1+r)
         currval = max(s-self.getStrike(), 0)
@@ -427,29 +500,39 @@ class AmerStraddle(Option):
     def isDoubleState(self):
         return False
 
+    def isSame(self, other):
+        if not isinstance(self, other): return False
+        bank1 = self.getBank()
+        bank2 = other.getBank()
+        if self.getStrike() != other.getStrike(): return False
+        if self.getMaturity() != other.getMaturity(): return False
+        if not bank1.isSame(bank2): return False
+        if not self.getUnderlying().isSame(other.getUnderlying()): return False
+        return True
+
     def domainCalc(self, N):
         return domainCalc_1(self.getBank(), self.getUnderlying(), N)
 
     def rollback1(self, p, q, n, s, rng):
         u = self.getUnderlying().getUpFactorn(n)
-        d = self.getUnderlying().getDownFactor(n)
-        r = self.getBank().getInterest(n)
+        d = self.getUnderlying().getDownFactorn(n)
+        r = self.getBank().getInterestn(n)
 
         rnmValue = (p[n]*rng[n+1][u*s] + q[n]*rng[n+1][d*s])/(1+r)
         return rnmValue if rnmValue > abs(self.getStrike()-s) else abs(self.getStrike()-s)
     
     def rollback2d(self, p, q, n, s, rng, m):
         u = self.getUnderlying().getUpFactorn(n)
-        d = self.getUnderlying().getDownFactor(n)
-        r = self.getBank().getInterest(n)
+        d = self.getUnderlying().getDownFactorn(n)
+        r = self.getBank().getInterestn(n)
 
         rnmValue = (p[n]*rng[n+1][(u*s,m)] + q[n]*rng[n+1][(d*s,min(d*s,m))])/(1+r)
         return rnmValue if rnmValue > abs(self.getStrike()-s) else abs(self.getStrike()-s)
 
     def rollback2u(self, p, q, n, s, rng, m):
         u = self.getUnderlying().getUpFactorn(n)
-        d = self.getUnderlying().getDownFactor(n)
-        r = self.getBank().getInterest(n)
+        d = self.getUnderlying().getDownFactorn(n)
+        r = self.getBank().getInterestn(n)
 
         rnmValue = (p[n]*rng[n+1][(u*s,max(u*s,m))] + q[n]*rng[n+1][(d*s,m)])/(1+r)
         return rnmValue if rnmValue > abs(self.getStrike()-s) else abs(self.getStrike()-s)
@@ -486,6 +569,12 @@ class Down_Out_Barrier(Option):
         return False
     
     def isDoubleState(self):
+        return True
+
+    def isSame(self, other):
+        if not isinstance(self, other): return False
+        if self.getBarrier() != other.getBarrier(): return False
+        if not self.getUnderlying().isSame(other.getUnderlying()): return False
         return True
 
     def domainCalc(self, N):
@@ -526,6 +615,12 @@ class Up_Out_Barrier(Option):
     def isDoubleState(self):
         return True
 
+    def isSame(self, other):
+        if not isinstance(self, other): return False
+        if self.getBarrier() != other.getBarrier(): return False
+        if not self.getUnderlying().isSame(other.getUnderlying()): return False
+        return True
+
     def domainCalc(self, N):
         underly = self.getUnderlying()
         return upDomain_2(underly.getBank(), underly.getUnderlying(), N)
@@ -564,6 +659,12 @@ class Down_In_Barrier(Option):
     def isDoubleState(self):
         return True
 
+    def isSame(self, other):
+        if not isinstance(self, other): return False
+        if self.getBarrier() != other.getBarrier(): return False
+        if not self.getUnderlying().isSame(other.getUnderlying()): return False
+        return True
+
     def domainCalc(self, N):
         underly = self.getUnderlying()
         return downDomain_2(underly.getBank(), underly.getUnderlying(), N)
@@ -600,6 +701,12 @@ class Up_In_Barrier(Option):
         return False
     
     def isDoubleState(self):
+        return True
+
+    def isSame(self, other):
+        if not isinstance(self, other): return False
+        if self.getBarrier() != other.getBarrier(): return False
+        if not self.getUnderlying().isSame(other.getUnderlying()): return False
         return True
 
     def domainCalc(self, N):
