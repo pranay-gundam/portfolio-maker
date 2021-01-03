@@ -7,7 +7,25 @@
 from Discrete_Pricing import *
 from Options import *
 
-test1 = EuroPut(5, 10)
-test1 = EuroCall(5, 10)
+r1 = [0.1] * 2
+u1 = [2] * 2
+d1 = [0.5] * 2
 
+bank1 = Bank(r1)
+stock1 = Stock(u1, d1, 10)
 
+europut1 = EuroPut(15, 2, stock1, bank1)
+europutrng = pricingCalc(europut1)
+print("europut1: " + str(europutrng))
+
+eurocall1 = EuroCall(15, 2, stock1, bank1)
+eurocallputrng = pricingCalc(eurocall1)
+print("eurocall1: " + str(eurocallputrng))
+
+eurostraddle1 = EuroStraddle(15, 2, stock1, bank1)
+eurostraddlerng = pricingCalc(eurostraddle1)
+print("eurostraddle1: " + str(eurostraddlerng))
+
+amerput1 = AmerPut(15, 2, stock1, bank1)
+amerputrng = pricingCalc(amerput1)
+print("amerput1: " + str(amerputrng))
