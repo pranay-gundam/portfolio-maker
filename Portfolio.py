@@ -43,7 +43,7 @@ class Portfolio(object):
     # Can make this a bit more efficient by making sure we don't calculate the
     # domain each time.
     def calcPortfolio(self):
-        portval = []
+        portval = [dict()] * self.get
         for asset in self.getAssetConstantPair():
             pass
         return portval

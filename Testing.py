@@ -29,3 +29,11 @@ print("eurostraddle1: " + str(eurostraddlerng))
 amerput1 = AmerPut(15, 2, stock1, bank1)
 amerputrng = pricingCalc(amerput1)
 print("amerput1: " + str(amerputrng))
+
+amercall1 = AmerCall(15, 2, stock1, bank1)
+amercallrng = pricingCalc(amercall1)
+print("amercal1: " + str(amercallrng))
+
+amerstraddle1 = AmerStraddle(15, 2, stock1, bank1)
+amerstraddlerng = pricingCalc(amerstraddle1)
+print("amerstraddle1: " + str(amerstraddlerng))

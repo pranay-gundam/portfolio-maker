@@ -8,3 +8,9 @@
 5. Create functionality to be able to create a replicating portfolio, verify if
    a market is arbitrage free, or verify if a market is complete.
 6. Get real time data from online and incorporate that into the porfolio maker
+
+Portfolio Pricing:
+1. Within pricing, edit it so that the dictionary key is a tuple of the number
+   of ups, number of downs, and the underylying price.
+2. In the portfolio pricing then use the keys of each asset (their ups and downs
+   not the underlying price) to add each specific value.
