@@ -19,6 +19,9 @@ class Bank(object):
     def getInterest(self):
         return self.interest
 
+    def getMaturity(self):
+        return self.finTime
+
     def isSame(self, other):
         if not isinstance(self, other): return False
         if (self.getFinTime() == other.getFinTime() and 
@@ -40,6 +43,7 @@ class Stock(object):
         self.price0 = S_0
         self.up = u
         self.down = d
+        # add safety check here that u and d are the same length
     
     def getUpFactor(self):
         return self.up
@@ -56,6 +60,9 @@ class Stock(object):
     def getInitPrice(self):
         return self.price0
     
+    def getMaturity(self):
+        return len(self.getUpFactor())
+
     def isSame(self, other):
         if not isinstance(self, other): return False
         init1 = self.getInitPrice()
@@ -86,12 +93,12 @@ def domainCalc_1(bank, asset, N):
     q = [(u[i] - (1+r[i]))/(u[i]-d[i]) for i in range(len(r))]
 
     domain = [0] * (N+1)
-    domain[0] = set( [asset.getInitPrice()] )
+    domain[0] = set([("", asset.getInitPrice())] )
     for n in range(N):
         domain[n+1] = set()
-        for s in domain[n]:
-            domain[n+1].add(u[n]*s)
-            domain[n+1].add(d[n]*s)
+        for prev in domain[n]:
+            domain[n+1].add(("u" + prev[0], u[n]*prev[1]))
+            domain[n+1].add((prev[0] + "d", d[n]*prev[1]))
     return p, q, domain
 
 
@@ -107,12 +114,12 @@ def downDomain_2(bank, asset, N):
     q = [(u[i] - (1+r[i]))/(u[i]-d[i]) for i in range(len(r))]
 
     domain = [0] * (N+1)
-    domain[0] = set( [(asset.getInitPrice(), asset.getInitPrice())] )
+    domain[0] = set( [("", asset.getInitPrice(), asset.getInitPrice())] )
     for n in range(N):
         domain[n+1] = set()
-        for s in domain[n]:
-            domain[n+1].add( (u[n]*s, m) for (s,m) in domain[n] )
-            domain[n+1].add( (d[n]*s, min(d[n]*s, m)) for (s,m) in domain[n] )
+        for prev in domain[n]:
+            domain[n+1].add( ("u" + prev[0], u[n]*prev[1], prev[2]))
+            domain[n+1].add( (prev[0] + "d", d[n]*prev[1], min(d[n]*prev[1], prev[2])))
     return p, q, domain
 
 # In discrete time we can calculate the domain for the possible stock prices. 
@@ -128,12 +135,12 @@ def upDomain_2(bank, asset, N):
 
 
     domain = [0] * (N+1)
-    domain[0] = set( [(asset.getInitPrice(), asset.getInitPrice())] )
+    domain[0] = set( [("", asset.getInitPrice(), asset.getInitPrice())] )
     for n in range(N):
         domain[n+1] = set()
-        for s in domain[n]:
-            domain[n+1].add( (u[n]*s, max(u[n]*s, m)) for (s,m) in domain[n] )
-            domain[n+1].add( (d[n]*s, m) for (s,m) in domain[n] )
+        for prev in domain[n]:
+            domain[n+1].add( ("u" + prev[0], u[n]*prev[1], max(u[n]*prev[1], prev[2])))
+            domain[n+1].add( (prev[0] + "d", d[n]*prev[1], prev[2]) )
     return p, q, domain
 
 
@@ -184,22 +191,22 @@ class EuroPut(Option):
     def domainCalc(self, N):
         return domainCalc_1(self.getBank(), self.getUnderlying(), N)
 
-    def rollback1(self, p, q, n, s, rng):
-        return (p[n]*rng[n+1][self.getUnderlying().getUpFactorn(n)*s] + 
-                q[n]*rng[n+1][self.getUnderlying().getDownFactorn(n)*s])/(1+
+    def rollback1(self, p, q, n, s, rng, state):
+        return (p[n]*rng[n+1][("u"+state, self.getUnderlying().getUpFactorn(n)*s)] + 
+                q[n]*rng[n+1][(state+"d", self.getUnderlying().getDownFactorn(n)*s)])/(1+
                 self.getBank().getInterestn(n))
 
-    def rollback2d(self, p, q, n, s, rng, m):
+    def rollback2d(self, p, q, n, s, rng, m, state):
         u = self.getUnderlying().getUpFactorn(n)
         d = self.getUnderlying().getDownFactor(n)
         r = self.getBank().getInterestn(n)
-        return (p[n]*rng[n+1][(u*s,m)] + q[n]*rng[n+1][(d*s,min(d*s,m))])/(1+r)
+        return (p[n]*rng[n+1][("u"+state,u*s,m)] + q[n]*rng[n+1][(state+"d",d*s,min(d*s,m))])/(1+r)
 
-    def rollback2u(self, p, q, n, s, rng, m):
+    def rollback2u(self, p, q, n, s, rng, m, state):
         u = self.getUnderlying().getUpFactorn(n)
         d = self.getUnderlying().getDownFactor(n)
         r = self.getBank().getInterestn(n)
-        return (p[n]*rng[n+1][(u*s,max(u*s,m))] + q[n]*rng[n+1][(d*s,m)])/(1+r)
+        return (p[n]*rng[n+1][("u"+state,u*s,max(u*s,m))] + q[n]*rng[n+1][(state+"d",d*s,m)])/(1+r)
 
     def finalEval(self, s):
         return self.getStrike()-s if self.getStrike()-s > 0 else 0
@@ -246,23 +253,23 @@ class EuroCall(Option):
     def domainCalc(self, N):
         return domainCalc_1(self.getBank(), self.getUnderlying(), N)
 
-    def rollback1(self, p, q, n, s, rng):
+    def rollback1(self, p, q, n, s, rng, state):
         u = self.getUnderlying().getUpFactorn(n)
         d = self.getUnderlying().getDownFactorn(n)
         r = self.getBank().getInterestn(n)
-        return (p[n]*rng[n+1][u*s] + q[n]*rng[n+1][d*s])/(1+r)
+        return (p[n]*rng[n+1][("u"+state,u*s)] + q[n]*rng[n+1][(state+"d",d*s)])/(1+r)
     
-    def rollback2d(self, p, q, n, s, rng, m):
+    def rollback2d(self, p, q, n, s, rng, m, state):
         u = self.getUnderlying().getUpFactorn(n)
         d = self.getUnderlying().getDownFactorn(n)
         r = self.getBank().getInterestn(n)
-        return (p[n]*rng[n+1][(u*s,m)] + q[n]*rng[n+1][(d*s,min(d*s,m))])/(1+r)
+        return (p[n]*rng[n+1][("u"+state,u*s,m)] + q[n]*rng[n+1][(state+"d",d*s,min(d*s,m))])/(1+r)
 
-    def rollback2u(self, u, d, r, p, q, n, s, rng, m):
+    def rollback2u(self, u, d, r, p, q, n, s, rng, m, state):
         u = self.getUnderlying().getUpFactorn(n)
         d = self.getUnderlying().getDownFactorn(n)
         r = self.getBank().getInterestn(n)
-        return (p[n]*rng[n+1][(u*s,max(u*s,m))] + q[n]*rng[n+1][(d*s,m)])/(1+r)
+        return (p[n]*rng[n+1][("u"+state,u*s,max(u*s,m))] + q[n]*rng[n+1][(state+"d",d*s,m)])/(1+r)
 
     def finalEval(self, s):
         return s-self.getStrike() if s-self.getStrike() > 0 else 0
@@ -309,23 +316,23 @@ class EuroStraddle(Option):
     def domainCalc(self, N):
         return domainCalc_1(self.getBank(), self.getUnderlying(), N)
 
-    def rollback1(self, p, q, n, s, rng):
+    def rollback1(self, p, q, n, s, rng, state):
         u = self.getUnderlying().getUpFactorn(n)
         d = self.getUnderlying().getDownFactorn(n)
         r = self.getBank().getInterestn(n)
-        return (p[n]*rng[n+1][u*s] + q[n]*rng[n+1][d*s])/(1+r)
+        return (p[n]*rng[n+1][("u"+state,u*s)] + q[n]*rng[n+1][(state+"d",d*s)])/(1+r)
     
-    def rollback2d(self, p, q, n, s, rng, m):
+    def rollback2d(self, p, q, n, s, rng, m, state):
         u = self.getUnderlying().getUpFactorn(n)
         d = self.getUnderlying().getDownFactorn(n)
         r = self.getBank().getInterestn(n)
-        return (p[n]*rng[n+1][(u*s,m)] + q[n]*rng[n+1][(d*s,min(d*s,m))])/(1+r)
+        return (p[n]*rng[n+1][("u"+state,u*s,m)] + q[n]*rng[n+1][(state+"d",d*s,min(d*s,m))])/(1+r)
 
-    def rollback2u(self, u, d, r, p, q, n, s, rng, m):
+    def rollback2u(self, u, d, r, p, q, n, s, rng, m, state):
         u = self.getUnderlying().getUpFactorn(n)
         d = self.getUnderlying().getDownFactorn(n)
         r = self.getBank().getInterestn(n)
-        return (p[n]*rng[n+1][(u*s,max(u*s,m))] + q[n]*rng[n+1][(d*s,m)])/(1+r)
+        return (p[n]*rng[n+1][("u"+state,u*s,max(u*s,m))] + q[n]*rng[n+1][(state+"d",d*s,m)])/(1+r)
         
     def finalEval(self, s):
         return abs(s - self.getStrike())
@@ -369,30 +376,30 @@ class AmerPut(Option):
     def domainCalc(self, N):
         return domainCalc_1(self.getBank(), self.getUnderlying(), N)
 
-    def rollback1(self, p, q, n, s, rng):
+    def rollback1(self, p, q, n, s, rng, state):
         u = self.getUnderlying().getUpFactorn(n)
         d = self.getUnderlying().getDownFactorn(n)
         r = self.getBank().getInterestn(n)
 
-        rnmValue = (p[n]*rng[n+1][u*s] + q[n]*rng[n+1][d*s])/(1+r)
+        rnmValue = (p[n]*rng[n+1][("u"+state,u*s)] + q[n]*rng[n+1][(state+"d",d*s)])/(1+r)
         currval = max(self.getStrike()-s, 0)
         return rnmValue if rnmValue > currval else currval
 
-    def rollback2d(self, p, q, n, s, rng, m):
+    def rollback2d(self, p, q, n, s, rng, m, state):
         u = self.getUnderlying().getUpFactorn(n)
         d = self.getUnderlying().getDownFactorn(n)
         r = self.getBank().getInterestn(n)
 
-        rnmValue = (p[n]*rng[n+1][(u*s,m)] + q[n]*rng[n+1][(d*s,min(d*s,m))])/(1+r)
+        rnmValue = (p[n]*rng[n+1][("u"+state,u*s,m)] + q[n]*rng[n+1][(state+"d",d*s,min(d*s,m))])/(1+r)
         currval = max(self.getStrike() - s, 0)
         return rnmValue if rnmValue > currval else currval
     
-    def rollback2u(self, u, d, r, p, q, n, s, rng, m):
+    def rollback2u(self, u, d, r, p, q, n, s, rng, m, state):
         u = self.getUnderlying().getUpFactorn(n)
         d = self.getUnderlying().getDownFactorn(n)
         r = self.getBank().getInterestn(n)
 
-        rnmValue = (p[n]*rng[n+1][(u*s,max(u*s,m))] + q[n]*rng[n+1][(d*s,m)])/(1+r)
+        rnmValue = (p[n]*rng[n+1][("u"+state,u*s,max(u*s,m))] + q[n]*rng[n+1][(state+"d",d*s,m)])/(1+r)
         currval = max(self.getStrike() - s, 0)
         return rnmValue if rnmValue > currval else currval
 
@@ -441,30 +448,30 @@ class AmerCall(Option):
     def domainCalc(self, N):
         return domainCalc_1(self.getBank(), self.getUnderlying(), N)
 
-    def rollback1(self, p, q, n, s, rng):
+    def rollback1(self, p, q, n, s, rng, state):
         u = self.getUnderlying().getUpFactorn(n)
         d = self.getUnderlying().getDownFactorn(n)
         r = self.getBank().getInterestn(n)
 
-        rnmValue = (p[n]*rng[n+1][u*s] + q[n]*rng[n+1][d*s])/(1+r)
+        rnmValue = (p[n]*rng[n+1][("u"+state,u*s)] + q[n]*rng[n+1][(state+"d",d*s)])/(1+r)
         currval = max(s-self.getStrike(), 0)
         return rnmValue if rnmValue > currval else currval
 
-    def rollback2d(self, p, q, n, s, rng, m):
+    def rollback2d(self, p, q, n, s, rng, m, state):
         u = self.getUnderlying().getUpFactorn(n)
         d = self.getUnderlying().getDownFactorn(n)
         r = self.getBank().getInterestn(n)
 
-        rnmValue = (p[n]*rng[n+1][(u*s,m)] + q[n]*rng[n+1][(d*s,min(d*s,m))])/(1+r)
+        rnmValue = (p[n]*rng[n+1][("u"+state,u*s,m)] + q[n]*rng[n+1][(state+"d",d*s,min(d*s,m))])/(1+r)
         currval = max(s-self.getStrike(), 0)
         return rnmValue if rnmValue > currval else currval
 
-    def rollback2u(self, p, q, n, s, rng, m):
+    def rollback2u(self, p, q, n, s, rng, m, state):
         u = self.getUnderlying().getUpFactorn(n)
         d = self.getUnderlying().getDownFactorn(n)
         r = self.getBank().getInterestn(n)
 
-        rnmValue = (p[n]*rng[n+1][(u*s,max(u*s,m))] + q[n]*rng[n+1][(d*s,m)])/(1+r)
+        rnmValue = (p[n]*rng[n+1][("u"+state,u*s,max(u*s,m))] + q[n]*rng[n+1][(state+"d",d*s,m)])/(1+r)
         currval = max(s-self.getStrike(), 0)
         return rnmValue if rnmValue > currval else currval
 
@@ -513,28 +520,28 @@ class AmerStraddle(Option):
     def domainCalc(self, N):
         return domainCalc_1(self.getBank(), self.getUnderlying(), N)
 
-    def rollback1(self, p, q, n, s, rng):
+    def rollback1(self, p, q, n, s, rng, state):
         u = self.getUnderlying().getUpFactorn(n)
         d = self.getUnderlying().getDownFactorn(n)
         r = self.getBank().getInterestn(n)
 
-        rnmValue = (p[n]*rng[n+1][u*s] + q[n]*rng[n+1][d*s])/(1+r)
+        rnmValue = (p[n]*rng[n+1][("u"+state,u*s)] + q[n]*rng[n+1][(state+"d",d*s)])/(1+r)
         return rnmValue if rnmValue > abs(self.getStrike()-s) else abs(self.getStrike()-s)
     
-    def rollback2d(self, p, q, n, s, rng, m):
+    def rollback2d(self, p, q, n, s, rng, m, state):
         u = self.getUnderlying().getUpFactorn(n)
         d = self.getUnderlying().getDownFactorn(n)
         r = self.getBank().getInterestn(n)
 
-        rnmValue = (p[n]*rng[n+1][(u*s,m)] + q[n]*rng[n+1][(d*s,min(d*s,m))])/(1+r)
+        rnmValue = (p[n]*rng[n+1][("u"+state,u*s,m)] + q[n]*rng[n+1][(state+"d",d*s,min(d*s,m))])/(1+r)
         return rnmValue if rnmValue > abs(self.getStrike()-s) else abs(self.getStrike()-s)
 
-    def rollback2u(self, p, q, n, s, rng, m):
+    def rollback2u(self, p, q, n, s, rng, m, state):
         u = self.getUnderlying().getUpFactorn(n)
         d = self.getUnderlying().getDownFactorn(n)
         r = self.getBank().getInterestn(n)
 
-        rnmValue = (p[n]*rng[n+1][(u*s,max(u*s,m))] + q[n]*rng[n+1][(d*s,m)])/(1+r)
+        rnmValue = (p[n]*rng[n+1][("u"+state,u*s,max(u*s,m))] + q[n]*rng[n+1][(state+"d",d*s,m)])/(1+r)
         return rnmValue if rnmValue > abs(self.getStrike()-s) else abs(self.getStrike()-s)
 
     def currEval(self, s):
@@ -581,8 +588,8 @@ class Down_Out_Barrier(Option):
         underly = self.getUnderlying()
         return downDomain_2(underly.getBank(), underly.getUnderlying(), N)
 
-    def rollback(self, p, q, n, s, rng, m):
-        rnmValue = self.underlying.rollback2d(p, q, n, s, rng, m)
+    def rollback(self, p, q, n, s, rng, m, state):
+        rnmValue = self.underlying.rollback2d(p, q, n, s, rng, m, state)
         return rnmValue if m >= self.getBarrier else 0
 
     def currEval(self, s):
@@ -625,8 +632,8 @@ class Up_Out_Barrier(Option):
         underly = self.getUnderlying()
         return upDomain_2(underly.getBank(), underly.getUnderlying(), N)
 
-    def rollback(self, p, q, n, s, rng, m):
-        rnmValue = self.underlying.rollback2u(p, q, n, s, rng, m)
+    def rollback(self, p, q, n, s, rng, m, state):
+        rnmValue = self.underlying.rollback2u(p, q, n, s, rng, m, state)
         return rnmValue if m <= self.getBarrier else 0
 
     def currEval(self, s):
@@ -669,8 +676,8 @@ class Down_In_Barrier(Option):
         underly = self.getUnderlying()
         return downDomain_2(underly.getBank(), underly.getUnderlying(), N)
 
-    def rollback(self, p, q, n, s, rng, m):
-        rnmValue = self.underlying.rollback2d(p, q, n, s, rng, m)
+    def rollback(self, p, q, n, s, rng, m, state):
+        rnmValue = self.underlying.rollback2d(p, q, n, s, rng, m, state)
         return rnmValue if m <= self.getBarrier else 0
 
     def currEval(self, s):
@@ -713,8 +720,8 @@ class Up_In_Barrier(Option):
         underly = self.getUnderlying()
         return upDomain_2(underly.getBank(), underly.getUnderlying(), N)
 
-    def rollback(self, p, q, n, s, rng, m):
-        rnmValue = self.underlying.rollback2u(p, q, n, s, rng, m)
+    def rollback(self, p, q, n, s, rng, m, state):
+        rnmValue = self.underlying.rollback2u(p, q, n, s, rng, m, state)
         return rnmValue if m >= self.getBarrier else 0
 
     def currEval(self, s):

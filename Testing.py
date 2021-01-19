@@ -6,6 +6,7 @@
 
 from Discrete_Pricing import *
 from Options import *
+from Portfolio import *
 
 r1 = [0.1] * 2
 u1 = [2] * 2
@@ -37,3 +38,7 @@ print("amercal1: " + str(amercallrng))
 amerstraddle1 = AmerStraddle(15, 2, stock1, bank1)
 amerstraddlerng = pricingCalc(amerstraddle1)
 print("amerstraddle1: " + str(amerstraddlerng))
+
+portfolio1 = Portfolio([europut1, eurocall1, amerput1], [2,1,2])
+portvalue1 = portfolio1.calcPortfolio()
+print("portvalue1: " + str(portvalue1))

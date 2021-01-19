@@ -15,18 +15,14 @@ def pricingCalc(option):
     rng = [0] * (N+1)
 
     if option.isSingleState():
-        rng[N] = {s: option.finalEval(s) for s in domain[N]}
+        rng[N] = {state: option.finalEval(state[1]) for state in domain[N]}
         for n in range(N-1, -1, -1):
-            for s in domain[n]:
-                rng[n] = {s : option.rollback1(p, q, n, s, rng) for s
-                in domain[n]}
+                rng[n] = {state : option.rollback1(p, q, n, state[1], rng, state[0]) for state in domain[n]}
 
     elif option.isDoubleState():
-        rng[N] = {(s,m): option.finalEval(s,m) for (s,m) in domain[N]}
+        rng[N] = {state: option.finalEval(state[1], state[2]) for state in domain[N]}
         for n in range(N-1, -1, -1):
-            for s in domain[n]:
-                rng[n] = {(s,m): option.rollback(p, q, n, s, rng, m) 
-                          for (s,m) in domain[n]}
+                rng[n] = {state: option.rollback(p, q, n, state[1], rng, state[2], state[0]) for state in domain[n]}
     return rng
 
 
