@@ -590,13 +590,13 @@ class Down_Out_Barrier(Option):
 
     def rollback(self, p, q, n, s, rng, m, state):
         rnmValue = self.underlying.rollback2d(p, q, n, s, rng, m, state)
-        return rnmValue if m >= self.getBarrier else 0
+        return rnmValue if m >= self.getBarrier() else 0
 
     def currEval(self, s):
         return self.underlying.currEval(s)
     
     def finalEval(self, s, m):
-        return self.underlying.finalEval(s) if m >= self.getBarrier else 0
+        return self.underlying.finalEval(s) if m >= self.getBarrier() else 0
 
 
 class Up_Out_Barrier(Option):
@@ -634,13 +634,13 @@ class Up_Out_Barrier(Option):
 
     def rollback(self, p, q, n, s, rng, m, state):
         rnmValue = self.underlying.rollback2u(p, q, n, s, rng, m, state)
-        return rnmValue if m <= self.getBarrier else 0
+        return rnmValue if m <= self.getBarrier() else 0
 
     def currEval(self, s):
         return self.underlying.currEval(s)
     
     def finalEval(self, s, m):
-        return self.underlying.finalEval(s) if m <= self.getBarrier else 0
+        return self.underlying.finalEval(s) if m <= self.getBarrier() else 0
 
 
 class Down_In_Barrier(Option):
@@ -678,13 +678,13 @@ class Down_In_Barrier(Option):
 
     def rollback(self, p, q, n, s, rng, m, state):
         rnmValue = self.underlying.rollback2d(p, q, n, s, rng, m, state)
-        return rnmValue if m <= self.getBarrier else 0
+        return rnmValue if m <= self.getBarrier() else 0
 
     def currEval(self, s):
         return self.underlying.currEval(s)
     
     def finalEval(self, s, m):
-        return self.underlying.finalEval(s) if m <= self.getBarrier else 0
+        return self.underlying.finalEval(s) if m <= self.getBarrier() else 0
 
 
 class Up_In_Barrier(Option):
@@ -722,12 +722,12 @@ class Up_In_Barrier(Option):
 
     def rollback(self, p, q, n, s, rng, m, state):
         rnmValue = self.underlying.rollback2u(p, q, n, s, rng, m, state)
-        return rnmValue if m >= self.getBarrier else 0
+        return rnmValue if m >= self.getBarrier() else 0
 
     def currEval(self, s):
         return self.underlying.currEval(s)
     
     def finalEval(self, s, m):
-        return self.underlying.finalEval(s) if m >= self.getBarrier else 0
+        return self.underlying.finalEval(s) if m >= self.getBarrier() else 0
 
           

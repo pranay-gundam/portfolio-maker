@@ -8,6 +8,9 @@ from Discrete_Pricing import *
 from Options import *
 from Portfolio import *
 
+
+# need to do a lot of safety checks: maturity times, 
+
 r1 = [0.1] * 2
 u1 = [2] * 2
 d1 = [0.5] * 2
@@ -38,6 +41,10 @@ print("amercal1: " + str(amercallrng))
 amerstraddle1 = AmerStraddle(15, 2, stock1, bank1)
 amerstraddlerng = pricingCalc(amerstraddle1)
 print("amerstraddle1: " + str(amerstraddlerng))
+
+downtest1 = Down_Out_Barrier(eurocall1, 5)
+downeval = pricingCalc(downtest1)
+print("downtest1:" + str(downeval))
 
 portfolio1 = Portfolio([europut1, eurocall1, amerput1], [2,1,2])
 portvalue1 = portfolio1.calcPortfolio()
