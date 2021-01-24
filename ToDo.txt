@@ -1,16 +1,9 @@
-0. Fix errors with the domain calculation (think about a call on an up and out
+1. Fix errors with the domain calculation (think about a call on an up and out
    barrier option, how does domain calculation and pricing work when options
-   are stacked like that?)
-1. Test all the options and functions made to far using test code from 21-370
-2. Create functionality to create portfolios
-3. Make a .exe file and a user interface
-4. Price other options that are included in the README file
-5. Create functionality to be able to create a replicating portfolio, verify if
+   are stacked like that?). Fix the Barrier option calculation as well.
+2. Make a .exe file
+3. Price other options that are included in the README file
+4. Create functionality to be able to create a replicating portfolio, verify if
    a market is arbitrage free, or verify if a market is complete.
-6. Get real time data from online and incorporate that into the porfolio maker
+5. Get real time data from online and incorporate that into the porfolio maker
 
-Portfolio Pricing:
-1. Within pricing, edit it so that the dictionary key is a tuple of the number
-   of ups, number of downs, and the underylying price.
-2. In the portfolio pricing then use the keys of each asset (their ups and downs
-   not the underlying price) to add each specific value.
