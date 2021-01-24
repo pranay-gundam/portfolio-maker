@@ -49,8 +49,13 @@ class Portfolio(object):
     # each asset in the portfolio has the same "maturity time".
     def calcPortfolio(self):
         # I will do this in a unrefined way for now and modify for later
+
         assets = self.getAssets()
         constants = self.getConstants()
+
+        if assets == []:
+            return []
+
         placer1 = pricingCalc(assets[0])
         portval = [0] * (assets[0].getMaturity()+1)
 

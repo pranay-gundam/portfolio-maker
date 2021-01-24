@@ -13,6 +13,9 @@ class Bank(object):
         self.interest = r
         self.finTime = len(r)
     
+    def __str__(self):
+        return f"BANK\nFinal Time: {self.finTime}\nInterest Rate: {self.interest}"
+
     def getFinTime(self):
         return self.finTime
 
@@ -45,6 +48,9 @@ class Stock(object):
         self.down = d
         # add safety check here that u and d are the same length
     
+    def __str__(self):
+        return f"STOCK\nInitial Price: {self.price0}\nUp Factors: {self.up}\nDownFactors: {self.down}"
+
     def getUpFactor(self):
         return self.up
     
@@ -160,6 +166,9 @@ class EuroPut(Option):
         self.underlying = underlying
         self.bank = bank
     
+    def __str__(self):
+        return f"EUROPEAN PUT\nStrike Price: {self.strike}\nMaturity: {self.maturity}\nBank: {str(self.bank)}\nUnderlying: {str(self.underlying)}"
+
     def getStrike(self):
         return self.strike
 
@@ -221,7 +230,10 @@ class EuroCall(Option):
         self.maturity = N
         self.underlying = underlying
         self.bank = bank
-    
+
+    def __str__(self):
+        return f"EUROPEAN CALL\nStrike Price: {self.strike}\nMaturity: {self.maturity}\nBank: {str(self.bank)}\nUnderlying: {str(self.underlying)}"
+
     def getUnderlying(self):
         return self.underlying
     
@@ -285,6 +297,9 @@ class EuroStraddle(Option):
         self.underlying = underlying
         self.bank = bank
     
+    def __str__(self):
+        return f"EUROPEAN STRADDLE\nStrike Price: {self.strike}\nMaturity: {self.maturity}\nBank: {str(self.bank)}\nUnderlying: {str(self.underlying)}"
+
     def getUnderlying(self):
         return self.underlying
     
@@ -344,7 +359,10 @@ class AmerPut(Option):
         self.maturity = N
         self.underlying = underlying
         self.bank = bank
-    
+
+    def __str__(self):
+        return f"AMERICAN PUT\nStrike Price: {self.strike}\nMaturity: {self.maturity}\nBank: {str(self.bank)}\nUnderlying: {str(self.underlying)}"
+
     def getUnderlying(self):
         return self.underlying
 
@@ -416,6 +434,9 @@ class AmerCall(Option):
         self.maturity = N
         self.underlying = underlying
         self.bank = bank
+
+    def __str__(self):
+        return f"AMERICAN CALL\nStrike Price: {self.strike}\nMaturity: {self.maturity}\nBank: {str(self.bank)}\nUnderlying: {str(self.underlying)}"
 
     def getUnderlying(self):
         return self.underlying
@@ -489,6 +510,9 @@ class AmerStraddle(Option):
         self.underlying = underlying
         self.bank = bank
 
+    def __str__(self):
+        return f"AMERICAN STRADDLE\nStrike Price: {self.strike}\nMaturity: {self.maturity}\nBank: {str(self.bank)}\nUnderlying: {str(self.underlying)}"
+
     def getUnderlying(self):
         return self.underlying
 
@@ -559,7 +583,10 @@ class Down_Out_Barrier(Option):
     def __init__(self, underlying, D):
         self.underlying = underlying
         self.downBarrier = D
-    
+
+    def __str__(self):
+        return f"DOWN AND OUT BARRIER\nBarrier: {self.downBarrier}\n Underlying: {str(self.underlying)}"
+
     def getUnderlying(self):
         return self.underlying
 
@@ -604,6 +631,9 @@ class Up_Out_Barrier(Option):
         self.underlying = underlying
         self.upBarrier = U
     
+    def __str__(self):
+        return f"UP AND OUT BARRIER\nBarrier: {self.upBarrier}\n Underlying: {str(self.underlying)}"
+
     def getUnderlying(self):
         return self.underlying
 
@@ -648,6 +678,9 @@ class Down_In_Barrier(Option):
         self.underlying = underlying
         self.downBarrier = D
 
+    def __str__(self):
+        return f"DOWN AND IN BARRIER\nBarrier: {self.downBarrier}\n Underlying: {str(self.underlying)}"
+
     def getUnderlying(self):
         return self.underlying
 
@@ -691,6 +724,9 @@ class Up_In_Barrier(Option):
     def __init__(self, underlying, U):
         self.underlying = underlying
         self.upBarrier = U
+
+    def __str__(self):
+        return f"UP AND IN BARRIER\nBarrier: {self.upBarrier}\n Underlying: {str(self.underlying)}"
 
     def getUnderlying(self):
         return self.underlying
